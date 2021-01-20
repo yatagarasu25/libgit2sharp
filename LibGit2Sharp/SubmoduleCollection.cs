@@ -9,6 +9,8 @@ using LibGit2Sharp.Core.Handles;
 
 namespace LibGit2Sharp
 {
+    // I usually place using at the namespace level like how is done in the .NET Framework
+    // source code as it looks cleaner to me but it all does the same thing anyway.
     /// <summary>
     /// The collection of submodules in a <see cref="Repository"/>
     /// </summary>
@@ -21,7 +23,8 @@ namespace LibGit2Sharp
         /// Needed for mocking purposes.
         /// </summary>
         protected SubmoduleCollection()
-        { }
+        {
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="LibGit2Sharp.SubmoduleCollection"/> class.
@@ -40,10 +43,13 @@ namespace LibGit2Sharp
             get
             {
                 Ensure.ArgumentNotNullOrEmptyString(name, "name");
-
-                return Lookup(name, handle => new Submodule(repo, name,
-                                                            Proxy.git_submodule_path(handle),
-                                                            Proxy.git_submodule_url(handle)));
+                return Lookup(
+                    name,
+                    handle => new Submodule(
+                        repo,
+                        name,
+                        Proxy.git_submodule_path(handle),
+                        Proxy.git_submodule_url(handle)));
             }
         }
 
@@ -62,21 +68,29 @@ namespace LibGit2Sharp
             {
                 if (handle == null)
                 {
-                    throw new NotFoundException("Submodule lookup failed for '{0}'.",
-                                                name);
+                    throw new NotFoundException("Submodule lookup failed for '{0}'.", name);
                 }
 
                 Proxy.git_submodule_init(handle, overwrite);
             }
         }
 
-
+        /// <summary>
+        /// Updates all of the submodules on the current repository.
+        /// <para>
+        ///   This will:
+        ///   1) Optionally initialize the if they are not already initialzed,
+        ///   2) clone the sub repositories if it has not already been cloned, and
+        ///   3) checkout the commit ID for the submodules in the sub repositories.
+        /// </para>
+        /// <param name="options">Options controlling the submodules update behavior and callbacks.</param>
         public virtual void UpdateAll(SubmoduleUpdateOptions options)
         {
             options = options ?? new SubmoduleUpdateOptions();
-
             foreach (var sm in this)
+            {
                 Update(sm.Name, options);
+            }
         }
 
         /// <summary>
@@ -89,34 +103,36 @@ namespace LibGit2Sharp
         /// </para>
         /// </summary>
         /// <param name="name">The name of the submodule to update.</param>
-        /// <param name="options">Options controlling submodule udpate behavior and callbacks.</param>
+        /// <param name="options">Options controlling submodule update behavior and callbacks.</param>
         public virtual void Update(string name, SubmoduleUpdateOptions options)
         {
             options = options ?? new SubmoduleUpdateOptions();
-
             using (var handle = Proxy.git_submodule_lookup(repo.Handle, name))
             {
                 if (handle == null)
                 {
-                    throw new NotFoundException("Submodule lookup failed for '{0}'.",
-                                                              name);
+                    throw new NotFoundException("Submodule lookup failed for '{0}'.", name);
                 }
 
                 using (GitCheckoutOptsWrapper checkoutOptionsWrapper = new GitCheckoutOptsWrapper(options))
                 {
                     var gitCheckoutOptions = checkoutOptionsWrapper.Options;
-
                     var remoteCallbacks = new RemoteCallbacks(options);
                     var gitRemoteCallbacks = remoteCallbacks.GenerateCallbacks();
-
                     var gitSubmoduleUpdateOpts = new GitSubmoduleUpdateOptions
                     {
                         Version = 1,
                         CheckoutOptions = gitCheckoutOptions,
-                        FetchOptions = new GitFetchOptions { ProxyOptions = new GitProxyOptions { Version = 1 }, RemoteCallbacks = gitRemoteCallbacks },
+                        FetchOptions = new GitFetchOptions
+                        {
+                            ProxyOptions = new GitProxyOptions
+                            {
+                                Version = 1
+                            },
+                            RemoteCallbacks = gitRemoteCallbacks
+                        },
                         CloneCheckoutStrategy = CheckoutStrategy.GIT_CHECKOUT_SAFE
                     };
-
                     Proxy.git_submodule_update(handle, options.Init, ref gitSubmoduleUpdateOpts);
                 }
             }
@@ -148,7 +164,9 @@ namespace LibGit2Sharp
                           handle =>
                           {
                               if (handle == null)
+                              {
                                   return false;
+                              }
 
                               Proxy.git_submodule_add_to_index(handle, writeIndex);
                               return true;
@@ -174,12 +192,11 @@ namespace LibGit2Sharp
             }
         }
 
+        // expression body is the same thing as using block body with return statement just less typing.
+        // it also makes the code look more cleaner and also more pretty and easier to read at the same time.
         private string DebuggerDisplay
         {
-            get
-            {
-                return string.Format(CultureInfo.InvariantCulture, "Count = {0}", this.Count());
-            }
+            get => string.Format(CultureInfo.InvariantCulture, "Count = {0}", this.Count());
         }
     }
 }
